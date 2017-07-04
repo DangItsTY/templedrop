@@ -51,13 +51,13 @@
           // game.load.crossOrigin = 'anonymous';
 
           game.load.image('player', 'player.png');
-          game.load.image('platform', 'grass.png');
+          game.load.image('platform', 'brick.png');
           game.load.image('flatformer', 'alien.png');
       }
 
       var player;
       var platforms;
-      var flatformers;
+      var bricks;
       var flatformers_platforms;
       var cursors;
       var jumpButton;
@@ -65,6 +65,7 @@
       var SCREENWIDTH = 800;
       var SCREENHEIGHT = 450;
       var SCREENWIDTHINBLOCKS = SCREENWIDTH / BLOCKSIZE;
+      var SCREENHEIGHTINBLOCKS = SCREENHEIGHT / BLOCKSIZE;
 
       function create() {
           player = game.add.sprite(100, 200, 'player');
@@ -79,16 +80,16 @@
           player.width = BLOCKSIZE;
 
           platforms = game.add.physicsGroup();
-          for (var i = 0; i < (SCREENWIDTHINBLOCKS / 2); i++) {
-            platforms.create((BLOCKSIZE * 2) * i, SCREENHEIGHT - (BLOCKSIZE * 2), 'platform');
+          for (var i = 0; i < (SCREENWIDTHINBLOCKS); i++) {
+            platforms.create((BLOCKSIZE * 1) * i, SCREENHEIGHT - (BLOCKSIZE * 1), 'platform');
           }
           platforms.setAll('body.immovable', true);
-          platforms.setAll('width', BLOCKSIZE * 2);
-          platforms.setAll('height', BLOCKSIZE * 2);
+          platforms.setAll('width', BLOCKSIZE * 1);
+          platforms.setAll('height', BLOCKSIZE * 1);
 
-          flatformers = game.add.physicsGroup();
-          flatformers_platforms = game.add.physicsGroup();
-          makeFlatformer();
+          bricks = game.add.physicsGroup();
+          // flatformers_platforms = game.add.physicsGroup();
+          makeBrick();
 
           cursors = game.input.keyboard.createCursorKeys();
           jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
@@ -96,29 +97,29 @@
           rightButton = game.input.keyboard.addKey(Phaser.Keyboard.D);
       }
 
-      function makeFlatformer()
+      function makeBrick()
       {
-          var num = Math.floor(Math.random() * 2);
-          flatformer = game.add.sprite(num * 800, BLOCKSIZE, 'flatformer');
-          game.physics.arcade.enable(flatformer);
-          flatformer.smoothed = false;
-          flatformer.body.collideWorldBounds = true;
-          flatformer.body.gravity.y = 75;
-          flatformer.body.velocity.x = 75;
-          flatformer.body.bounce.x = 1.0;
-          flatformer.body.bounce.y = 1.0;
-          flatformer.width = BLOCKSIZE * 2;
-          flatformer.height = BLOCKSIZE * 2;
-          flatformers.add(flatformer);
+          var num = Math.floor(Math.random() * SCREENWIDTHINBLOCKS);
+          brick = game.add.sprite(num * BLOCKSIZE, BLOCKSIZE, 'brick');
+          game.physics.arcade.enable(brick);
+          brick.smoothed = false;
+          brick.body.collideWorldBounds = true;
+          brick.body.gravity.y = 75;
+          //brick.body.velocity.x = 75;
+          // flatformer.body.bounce.x = 1.0;
+          // flatformer.body.bounce.y = 1.0;
+          brick.width = BLOCKSIZE;
+          brick.height = BLOCKSIZE;
+          bricks.add(brick);
 
-          flatformer_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
-          game.physics.arcade.enable(flatformer_platform);
-          flatformer_platform.alpha = 0;
-          flatformer_platform.width = BLOCKSIZE * 2;
-          flatformer_platform.height = BLOCKSIZE * 2;
-          flatformer_platform.body.immovable = true;
-          flatformer_platform.dataOwner = flatformer;
-          flatformers_platforms.add(flatformer_platform);
+          // flatformer_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
+          // game.physics.arcade.enable(flatformer_platform);
+          // flatformer_platform.alpha = 0;
+          // flatformer_platform.width = BLOCKSIZE * 2;
+          // flatformer_platform.height = BLOCKSIZE * 2;
+          // flatformer_platform.body.immovable = true;
+          // flatformer_platform.dataOwner = flatformer;
+          // flatformers_platforms.add(flatformer_platform);
       }
 
       var FRICTION = 20;
@@ -155,7 +156,9 @@
 
 
           game.physics.arcade.collide(player, platforms);
-          game.physics.arcade.collide(flatformers, platforms);
+          game.physics.arcade.collide(player, bricks);
+          game.physics.arcade.collide(bricks, platforms);
+          game.physics.arcade.collide(bricks, bricks);
           game.physics.arcade.collide(player, flatformers_platforms, collideFlatformer);
           if (cursors.left.isDown || leftButton.isDown || pointerMoveIsLeft)
           {
@@ -207,10 +210,10 @@
               }
           }
 
-          flatformers_platforms.forEach(function(obj)
-          {
-              obj.position = obj.dataOwner.position;
-          }, this);
+          // flatformers_platforms.forEach(function(obj)
+          // {
+          //     obj.position = obj.dataOwner.position;
+          // }, this);
       }
 
       function collideFlatformer(paramPlayer, paramFlatformerPlatform)
@@ -220,7 +223,7 @@
               paramFlatformerPlatform.dataOwner.destroy();
               paramFlatformerPlatform.destroy();
 
-              makeFlatformer();
+              //makeFlatformer();
               score();
           }
       }
@@ -232,9 +235,9 @@
       }
 
       function spawner() {
-        makeFlatformer();
+        makeBrick();
       }
-      var spawnerTimer = setInterval(spawner, 5000);
+      var spawnerTimer = setInterval(spawner, 1000);
 
 
       function render () {
