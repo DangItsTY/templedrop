@@ -25,7 +25,7 @@
     <body>
       <div id="gamewrapper" class="centercontainer">
         <div id="gamecontainer"></div>
-        <div id="hud" class="hudcontainer">
+        <div id="hud" class="hudcontainer" style="top:50px;">
           <span id="score_label">Score: </span><span id="score_value">0</span>
         </div>
       </div>
@@ -52,13 +52,17 @@
 
           game.load.image('player', 'player.png');
           game.load.image('platform', 'brick.png');
-          game.load.image('flatformer', 'alien.png');
+          game.load.image('brick', 'brick.png');
+          game.load.image('mummy', 'mummy.png');
+          game.load.image('rope', 'rope.png');
+          game.load.image('entrance', 'entrance.png');
       }
 
       var player;
       var platforms;
       var bricks;
-      var flatformers_platforms;
+      var brick_platforms;
+      var mummies;
       var cursors;
       var jumpButton;
       var BLOCKSIZE = 25
@@ -71,11 +75,13 @@
           player = game.add.sprite(100, 200, 'player');
           game.physics.arcade.enable(player);
           player.body.collideWorldBounds = true;
-          player.body.gravity.y = 500;
-          player.body.maxVelocity.x = 175;
-          player.dataJump = 3;
-          player.dataJumpMax = 3;
+          player.body.gravity.y = 1800;
+          player.body.maxVelocity.x = 200;
+          player.body.maxVelocity.y = 600;
+          player.dataJump = 1;
+          player.dataJumpMax = 1;
           player.dataJumpLock = false;
+          player.dataSpeed = 200;
           player.height = BLOCKSIZE;
           player.width = BLOCKSIZE;
 
@@ -87,8 +93,19 @@
           platforms.setAll('width', BLOCKSIZE * 1);
           platforms.setAll('height', BLOCKSIZE * 1);
 
+          rope = game.add.sprite(0, 0, 'rope');
+          game.physics.arcade.enable(rope);
+          rope.body.collideWorldBounds = true;
+          //player.height = BLOCKSIZE;
+          //player.width = BLOCKSIZE;
+
+          entrance = game.add.sprite((SCREENWIDTH/2) - BLOCKSIZE, 1*BLOCKSIZE, 'entrance');
+          game.physics.arcade.enable(rope);
+          rope.body.collideWorldBounds = true;
+
           bricks = game.add.physicsGroup();
-          // flatformers_platforms = game.add.physicsGroup();
+          mummies = game.add.physicsGroup();
+          brick_platforms = game.add.physicsGroup();
           makeBrick();
 
           cursors = game.input.keyboard.createCursorKeys();
@@ -97,29 +114,46 @@
           rightButton = game.input.keyboard.addKey(Phaser.Keyboard.D);
       }
 
-      function makeBrick()
+      function makeBrick(paramNum)
       {
-          var num = Math.floor(Math.random() * SCREENWIDTHINBLOCKS);
+          //var num = Math.floor(Math.random() * SCREENWIDTHINBLOCKS);
+          var num = paramNum || Math.floor(player.position.x / BLOCKSIZE);
           brick = game.add.sprite(num * BLOCKSIZE, BLOCKSIZE, 'brick');
           game.physics.arcade.enable(brick);
           brick.smoothed = false;
           brick.body.collideWorldBounds = true;
-          brick.body.gravity.y = 75;
+          brick.body.gravity.y = 1000;
           //brick.body.velocity.x = 75;
-          // flatformer.body.bounce.x = 1.0;
-          // flatformer.body.bounce.y = 1.0;
+          // brick.body.bounce.x = 0;
+          // brick.body.bounce.y = 0;
+          // brick.body.weight = 0;
+          // brick.body.friction.x = 0;
+          // brick.body.friction.y = 0;
+          brick.body.mass = 0;
           brick.width = BLOCKSIZE;
           brick.height = BLOCKSIZE;
           bricks.add(brick);
 
-          // flatformer_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
-          // game.physics.arcade.enable(flatformer_platform);
-          // flatformer_platform.alpha = 0;
-          // flatformer_platform.width = BLOCKSIZE * 2;
-          // flatformer_platform.height = BLOCKSIZE * 2;
-          // flatformer_platform.body.immovable = true;
-          // flatformer_platform.dataOwner = flatformer;
-          // flatformers_platforms.add(flatformer_platform);
+          brick_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
+          game.physics.arcade.enable(brick_platform);
+          brick_platform.alpha = 0;
+          brick_platform.width = BLOCKSIZE;
+          brick_platform.height = BLOCKSIZE;
+          brick_platform.body.immovable = true;
+          brick_platform.dataOwner = brick;
+          brick_platforms.add(brick_platform);
+      }
+
+      function makeMummy() {
+        var num = Math.floor(Math.random() * SCREENWIDTHINBLOCKS);
+        var newObj = game.add.sprite(num * BLOCKSIZE, BLOCKSIZE, 'mummy');
+        game.physics.arcade.enable(newObj);
+        newObj.smoothed = false;
+        //newObj.body.collideWorldBounds = true;
+        newObj.body.gravity.y = 75;
+        newObj.width = BLOCKSIZE;
+        newObj.height = BLOCKSIZE;
+        mummies.add(newObj);
       }
 
       var FRICTION = 20;
@@ -156,13 +190,17 @@
 
 
           game.physics.arcade.collide(player, platforms);
-          game.physics.arcade.collide(player, bricks);
+          //game.physics.arcade.collide(player, bricks, collideBricks);
           game.physics.arcade.collide(bricks, platforms);
           game.physics.arcade.collide(bricks, bricks);
-          game.physics.arcade.collide(player, flatformers_platforms, collideFlatformer);
+          game.physics.arcade.collide(mummies, brick_platforms);
+          game.physics.arcade.collide(mummies, platforms);
+          game.physics.arcade.collide(player, rope, collideRope);
+          game.physics.arcade.collide(player, brick_platforms, collideBricks);
           if (cursors.left.isDown || leftButton.isDown || pointerMoveIsLeft)
           {
-              player.body.acceleration.x = -250;
+              player.body.acceleration.x = -1 * player.dataSpeed;
+              player.body.velocity.x = -1 * player.dataSpeed;
               if (player.body.velocity.x > 0)
               {
                   player.body.velocity.x += -FRICTION*2;
@@ -170,7 +208,8 @@
           }
           else if (cursors.right.isDown || rightButton.isDown || pointerMoveIsRight)
           {
-              player.body.acceleration.x = 250;
+              player.body.acceleration.x = player.dataSpeed;
+              player.body.velocity.x = player.dataSpeed;
               if (player.body.velocity.x < 0)
               {
                   player.body.velocity.x += FRICTION*2;
@@ -195,7 +234,7 @@
 
           if ((jumpButton.isDown || pointerJump.isDown) && player.dataJump > 0 && !player.dataJumpLock)
           {
-              player.body.velocity.y = -300;
+              player.body.velocity.y = -1250;
               player.dataJump -= 1;
               player.dataJumpLock = true;
           }
@@ -204,32 +243,70 @@
           {
               player.dataJumpLock = false;
 
+              if (player.body.velocity.y < 0) {
+                player.body.velocity.y = 0;
+              }
+
               if (player.body.onFloor() || player.body.touching.down)
               {
                   player.dataJump = player.dataJumpMax;
               }
           }
 
-          // flatformers_platforms.forEach(function(obj)
-          // {
-          //     obj.position = obj.dataOwner.position;
-          // }, this);
+          brick_platforms.forEach(function(obj)
+          {
+              obj.position = obj.dataOwner.position;
+          }, this);
+
+          mummies.forEach(function(obj) {
+            if (obj.position.x < player.position.x) {
+              obj.body.velocity.x = 75;
+            } else if (obj.position.x > player.position.x) {
+              obj.body.velocity.x = -75;
+            } else {
+              obj.body.velocity.x = 0;
+            }
+          }, this);
       }
 
       function collideFlatformer(paramPlayer, paramFlatformerPlatform)
       {
-          if ((jumpButton.isDown || pointerJump.isDown) && (player.body.onFloor() || player.body.touching.down))
-          {
-              paramFlatformerPlatform.dataOwner.destroy();
-              paramFlatformerPlatform.destroy();
-
-              //makeFlatformer();
-              score();
-          }
+          // if ((jumpButton.isDown || pointerJump.isDown) && (player.body.onFloor() || player.body.touching.down))
+          // {
+          //     paramFlatformerPlatform.dataOwner.destroy();
+          //     paramFlatformerPlatform.destroy();
+          //
+          //     //makeFlatformer();
+          //     score();
+          // }
       }
 
-      function score() {
-        playerscore += 1;
+      function collideRope(paramPlayer, paramRope)
+      {
+        collapseBricks();
+      }
+
+      function collideBricks(paramPlayer, paramBrick)
+      {
+        //  Scoring
+        if (paramPlayer.position.y < paramBrick.position.y && (jumpButton.isDown || pointerJump.isDown) && (player.body.onFloor() || player.body.touching.down)) {
+          var amt = Math.floor(paramBrick.position.y / BLOCKSIZE);
+          score(amt);
+        }
+
+        // //  Collision Handling
+        // if (paramPlayer.position.y <= paramBrick.position.y && (player.body.onFloor() || player.body.touching.down)) {
+        //   if (player.body.touching.left) {
+        //     paramPlayer.body.velocity.x = 0;
+        //     console.log(paramPlayer.body.velocity.x);
+        //   } else if (player.body.touching.right) {
+        //     paramPlayer.body.velocity.x = 0;
+        //     console.log(paramPlayer.body.velocity.x);          }
+        // }
+      }
+
+      function score(amt) {
+        playerscore += amt || 1;
 
         document.getElementById("score_value").innerHTML = playerscore;
       }
@@ -237,11 +314,33 @@
       function spawner() {
         makeBrick();
       }
-      var spawnerTimer = setInterval(spawner, 1000);
+      var spawnerTimer = setInterval(spawner, 500);
+
+      // function spawner2() {
+      //   makeMummy();
+      // }
+      // var spawner2Timer = setInterval(spawner2, 1000);
+
+      var collapseBrickCount = 0;
+      var collapseBrickCountMax = 10;
+      var spawner3Timer;
+      function collapseBricks() {
+        if (collapseBrickCount == 0) {
+          spawner3Timer = setInterval(collapseBricks, 500);
+        }
+        if (collapseBrickCount >= collapseBrickCountMax) {
+          clearInterval(spawner3Timer);
+          collapseBrickCount = 0;
+        } else {
+          var num = Math.floor(Math.random() * SCREENWIDTHINBLOCKS);
+          makeBrick(num);
+          collapseBrickCount += 1;
+        }
+      }
 
 
       function render () {
-
+        game.debug.text('Elapsed seconds: ' + this.game.time.totalElapsedSeconds(), 32, 32);
       }
 
     };
