@@ -108,6 +108,17 @@
           brick_platforms = game.add.physicsGroup();
           makeBrick();
 
+          //  create pillar blocks for collision
+          for (var i = 0; i < SCREENWIDTHINBLOCKS - 1; i++) {
+            brick_platform = game.add.sprite(BLOCKSIZE + (i * BLOCKSIZE), SCREENHEIGHT - (BLOCKSIZE * 1), 'platform');
+            game.physics.arcade.enable(brick_platform);
+            brick_platform.alpha = 0;
+            brick_platform.width = BLOCKSIZE;
+            brick_platform.height = BLOCKSIZE;
+            brick_platform.body.immovable = true;
+            brick_platforms.add(brick_platform);
+          }
+
           cursors = game.input.keyboard.createCursorKeys();
           jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
           leftButton = game.input.keyboard.addKey(Phaser.Keyboard.A);
@@ -132,16 +143,17 @@
           brick.body.mass = 0;
           brick.width = BLOCKSIZE;
           brick.height = BLOCKSIZE;
+          brick.doneFalling = 0;
           bricks.add(brick);
 
-          brick_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
-          game.physics.arcade.enable(brick_platform);
-          brick_platform.alpha = 0;
-          brick_platform.width = BLOCKSIZE;
-          brick_platform.height = BLOCKSIZE;
-          brick_platform.body.immovable = true;
-          brick_platform.dataOwner = brick;
-          brick_platforms.add(brick_platform);
+          // brick_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
+          // game.physics.arcade.enable(brick_platform);
+          // brick_platform.alpha = 0;
+          // brick_platform.width = BLOCKSIZE;
+          // brick_platform.height = BLOCKSIZE;
+          // brick_platform.body.immovable = true;
+          // brick_platform.dataOwner = brick;
+          // brick_platforms.add(brick_platform);
       }
 
       function makeMummy() {
@@ -191,8 +203,8 @@
 
           game.physics.arcade.collide(player, platforms);
           //game.physics.arcade.collide(player, bricks, collideBricks);
-          game.physics.arcade.collide(bricks, platforms);
-          game.physics.arcade.collide(bricks, bricks);
+          game.physics.arcade.collide(bricks, platforms, collideColumn);
+          game.physics.arcade.collide(bricks, bricks, collideColumn);
           game.physics.arcade.collide(mummies, brick_platforms);
           game.physics.arcade.collide(mummies, platforms);
           game.physics.arcade.collide(player, rope, collideRope);
@@ -253,10 +265,10 @@
               }
           }
 
-          brick_platforms.forEach(function(obj)
-          {
-              obj.position = obj.dataOwner.position;
-          }, this);
+          // brick_platforms.forEach(function(obj)
+          // {
+          //     obj.position = obj.dataOwner.position;
+          // }, this);
 
           mummies.forEach(function(obj) {
             if (obj.position.x < player.position.x) {
@@ -284,6 +296,20 @@
       function collideRope(paramPlayer, paramRope)
       {
         collapseBricks();
+      }
+
+      function collideColumn(paramBrick, paramFloorOrBrick)
+      {
+        if (paramBrick.doneFalling == 0) {
+          var blockPos = Math.floor(paramBrick.position.x / BLOCKSIZE) - 1;
+          brick_platforms.children[blockPos].body.height += BLOCKSIZE;
+          brick_platforms.children[blockPos].y -= BLOCKSIZE;
+
+          var columnHeightPos = brick_platforms.children[blockPos].y;
+          paramBrick.doneFalling = columnHeightPos;
+        } else {
+          paramBrick.y = paramBrick.doneFalling;
+        }
       }
 
       function collideBricks(paramPlayer, paramBrick)
