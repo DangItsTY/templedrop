@@ -45,19 +45,22 @@
 
       function preload() {
           //game.stage.backgroundColor = '#85b5e1';
-          game.stage.backgroundColor = '#000000';
+          //game.stage.backgroundColor = '#000000';
+          //console.log(game.stage);
 
           // game.load.baseURL = 'http://examples.phaser.io/assets/';
           // game.load.crossOrigin = 'anonymous';
 
           game.load.image('player', 'player.png');
-          game.load.image('platform', 'brick.png');
+          game.load.image('platform', 'sand.png');
           game.load.image('brick', 'brick.png');
           game.load.image('mummy', 'mummy.png');
           game.load.image('rope', 'rope.png');
           game.load.image('entrance', 'entrance.png');
+          game.load.image('background', 'background.png');
       }
 
+      var background;
       var player;
       var platforms;
       var bricks;
@@ -72,6 +75,7 @@
       var SCREENHEIGHTINBLOCKS = SCREENHEIGHT / BLOCKSIZE;
 
       function create() {
+          background = game.add.sprite(0, 0, 'background');
           player = game.add.sprite(100, 200, 'player');
           game.physics.arcade.enable(player);
           player.body.collideWorldBounds = true;
@@ -100,8 +104,9 @@
           //player.width = BLOCKSIZE;
 
           entrance = game.add.sprite((SCREENWIDTH/2) - BLOCKSIZE, 1*BLOCKSIZE, 'entrance');
-          game.physics.arcade.enable(rope);
-          rope.body.collideWorldBounds = true;
+          game.physics.arcade.enable(entrance);
+          entrance.body.collideWorldBounds = true;
+          entrance.body.mass = 0;
 
           bricks = game.add.physicsGroup();
           mummies = game.add.physicsGroup();
@@ -109,13 +114,14 @@
           makeBrick();
 
           //  create pillar blocks for collision
-          for (var i = 0; i < SCREENWIDTHINBLOCKS - 1; i++) {
-            brick_platform = game.add.sprite(BLOCKSIZE + (i * BLOCKSIZE), SCREENHEIGHT - (BLOCKSIZE * 1), 'platform');
+          for (var i = 0; i < SCREENWIDTHINBLOCKS; i++) {
+            brick_platform = game.add.sprite(i * BLOCKSIZE, SCREENHEIGHT - (BLOCKSIZE * 1), 'platform');
             game.physics.arcade.enable(brick_platform);
             brick_platform.alpha = 0;
             brick_platform.width = BLOCKSIZE;
             brick_platform.height = BLOCKSIZE;
             brick_platform.body.immovable = true;
+            brick_platform.columnNum = i;
             brick_platforms.add(brick_platform);
           }
 
@@ -133,7 +139,7 @@
           game.physics.arcade.enable(brick);
           brick.smoothed = false;
           brick.body.collideWorldBounds = true;
-          brick.body.gravity.y = 1000;
+          brick.body.gravity.y = 500;
           //brick.body.velocity.x = 75;
           // brick.body.bounce.x = 0;
           // brick.body.bounce.y = 0;
@@ -143,7 +149,8 @@
           brick.body.mass = 0;
           brick.width = BLOCKSIZE;
           brick.height = BLOCKSIZE;
-          brick.doneFalling = 0;
+          brick.doneFalling = -1;
+          brick.columnNum = num;
           bricks.add(brick);
 
           // brick_platform = game.add.sprite(0, BLOCKSIZE, 'platform');
@@ -205,10 +212,37 @@
           //game.physics.arcade.collide(player, bricks, collideBricks);
           game.physics.arcade.collide(bricks, platforms, collideColumn);
           game.physics.arcade.collide(bricks, bricks, collideColumn);
-          game.physics.arcade.collide(mummies, brick_platforms);
+          game.physics.arcade.collide(mummies, brick_platforms, collideMummy);
           game.physics.arcade.collide(mummies, platforms);
           game.physics.arcade.collide(player, rope, collideRope);
           game.physics.arcade.collide(player, brick_platforms, collideBricks);
+          game.physics.arcade.collide(player, entrance, collideWin);
+
+          //  dash
+          // if ((cursor.left.isDown || leftButton.isDown) && player.dataDashThreshold > 0 && !player.dataJumpLock)
+          // {
+          //     player.body.velocity.y = -1250;
+          //     player.dataJump -= 1;
+          //     player.dataJumpLock = true;
+          // }
+          // if (jumpButton.isUp && pointerJump.isUp)
+          // {
+          //     player.dataJumpLock = false;
+          //
+          //     if (player.body.velocity.y < 0) {
+          //       player.body.velocity.y = 0;
+          //     }
+          //
+          //     if (player.body.onFloor() || player.body.touching.down)
+          //     {
+          //         player.dataJump = player.dataJumpMax;
+          //     }
+          // }
+
+          if (leftButton.downDuration(250) && leftButton.upDuration(250)) {
+            console.log("yes");
+          }
+
           if (cursors.left.isDown || leftButton.isDown || pointerMoveIsLeft)
           {
               player.body.acceleration.x = -1 * player.dataSpeed;
@@ -300,23 +334,31 @@
 
       function collideColumn(paramBrick, paramFloorOrBrick)
       {
-        if (paramBrick.doneFalling == 0) {
-          var blockPos = Math.floor(paramBrick.position.x / BLOCKSIZE) - 1;
+        var topBrick = paramBrick;
+        if (paramBrick.y > paramFloorOrBrick.y) {
+          topBrick = paramFloorOrBrick;
+        }
+        if (topBrick.doneFalling == -1) {
+          var blockPos = paramBrick.columnNum;
           brick_platforms.children[blockPos].body.height += BLOCKSIZE;
           brick_platforms.children[blockPos].y -= BLOCKSIZE;
 
           var columnHeightPos = brick_platforms.children[blockPos].y;
-          paramBrick.doneFalling = columnHeightPos;
+          topBrick.doneFalling = columnHeightPos;
+          topBrick.body.gravity = 0;
         } else {
-          paramBrick.y = paramBrick.doneFalling;
+          //paramBrick.y = paramBrick.doneFalling;
         }
       }
 
       function collideBricks(paramPlayer, paramBrick)
       {
+        if (paramPlayer.body.overlapY >= 0 && paramPlayer.body.position.y >= paramBrick.body.position.y) {
+          console.log("Player has died!");
+        }
         //  Scoring
-        if (paramPlayer.position.y < paramBrick.position.y && (jumpButton.isDown || pointerJump.isDown) && (player.body.onFloor() || player.body.touching.down)) {
-          var amt = Math.floor(paramBrick.position.y / BLOCKSIZE);
+        if (paramPlayer.position.y < paramBrick.position.y && paramPlayer.dataJump > 0 && (jumpButton.isDown || pointerJump.isDown) && (player.body.onFloor() || player.body.touching.down)) {
+          var amt = Math.floor(Math.abs(paramBrick.position.y - SCREENHEIGHT) / BLOCKSIZE);
           score(amt);
         }
 
@@ -331,6 +373,19 @@
         // }
       }
 
+      function collideMummy(paramMummy, paramBrick)
+      {
+        if (paramMummy.body.overlapY >= 0 && paramMummy.body.position.y >= paramBrick.body.position.y) {
+          mummies.remove(paramMummy);
+          var amt = 100;
+          score(amt);
+        }
+      }
+
+      function collideWin(paramPlayer, paramEntrance) {
+        console.log("You Win!!!");
+      }
+
       function score(amt) {
         playerscore += amt || 1;
 
@@ -342,10 +397,34 @@
       }
       var spawnerTimer = setInterval(spawner, 500);
 
-      // function spawner2() {
-      //   makeMummy();
-      // }
-      // var spawner2Timer = setInterval(spawner2, 1000);
+      function spawner2() {
+        makeMummy();
+      }
+      var spawner2Timer = setInterval(spawner2, 5000);
+
+      var quicksandSpeed = 5;
+      function quicksand() {
+        brick_platforms.forEach(function(obj) {
+          var bricksInSameColumn = bricks.children.filter(function(element, index, array) {
+            return element.columnNum == obj.columnNum && element.doneFalling >= 0;
+          }, this);
+
+          if (obj.y < SCREENHEIGHT - BLOCKSIZE) {
+            obj.y += 5;
+          } else {
+            obj.y = SCREENHEIGHT - BLOCKSIZE;
+          }
+
+          bricksInSameColumn.forEach(function(obj2) {
+            if (obj2.y < SCREENHEIGHT - BLOCKSIZE) {
+              obj2.y += 5;
+            } else {
+              obj2.y = SCREENHEIGHT - BLOCKSIZE;
+            }
+          }, this);
+        }, this);
+      }
+      var quicksandTimer = setInterval(quicksand, 1000);
 
       var collapseBrickCount = 0;
       var collapseBrickCountMax = 10;
