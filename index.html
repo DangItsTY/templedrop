@@ -58,8 +58,8 @@
           game.load.image('rope', 'rope.png');
           game.load.image('entrance', 'entrance.png');
           game.load.image('background', 'background.png');
+          game.load.audio('music', 'music.mp3') //  ogg may be needed
       }
-
       var background;
       var player;
       var platforms;
@@ -76,6 +76,8 @@
 
       function create() {
           background = game.add.sprite(0, 0, 'background');
+          music = game.add.audio('music');
+          music.play();
           player = game.add.sprite(100, 200, 'player');
           game.physics.arcade.enable(player);
           player.body.collideWorldBounds = true;
@@ -88,6 +90,8 @@
           player.dataSpeed = 200;
           player.height = BLOCKSIZE;
           player.width = BLOCKSIZE;
+
+
 
           platforms = game.add.physicsGroup();
           for (var i = 0; i < (SCREENWIDTHINBLOCKS); i++) {
