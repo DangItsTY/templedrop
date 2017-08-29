@@ -58,7 +58,8 @@
           game.load.image('rope', 'rope.png');
           game.load.image('entrance', 'entrance.png');
           game.load.image('background', 'background.png');
-          game.load.audio('music', 'music.mp3') //  ogg may be needed
+          game.load.audio('music', 'music.mp3'); //  ogg may be needed
+          game.load.audio('jumpse', 'jump.wav');
       }
       var background;
       var player;
@@ -77,6 +78,7 @@
       function create() {
           background = game.add.sprite(0, 0, 'background');
           music = game.add.audio('music');
+          jumpse = game.add.audio('jumpse');
           music.play();
           player = game.add.sprite(100, 200, 'player');
           game.physics.arcade.enable(player);
@@ -284,6 +286,7 @@
 
           if ((jumpButton.isDown || pointerJump.isDown) && player.dataJump > 0 && !player.dataJumpLock)
           {
+              jumpse.play();
               player.body.velocity.y = -1250;
               player.dataJump -= 1;
               player.dataJumpLock = true;
