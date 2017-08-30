@@ -175,7 +175,7 @@
         game.physics.arcade.enable(newObj);
         newObj.smoothed = false;
         //newObj.body.collideWorldBounds = true;
-        newObj.body.gravity.y = 75;
+        newObj.body.gravity.y = 500;
         newObj.width = BLOCKSIZE;
         newObj.height = BLOCKSIZE;
         mummies.add(newObj);
@@ -312,9 +312,9 @@
           // }, this);
 
           mummies.forEach(function(obj) {
-            if (obj.position.x < player.position.x) {
+            if (obj.position.x < player.position.x && (obj.body.onFloor() || obj.body.touching.down)) {
               obj.body.velocity.x = 75;
-            } else if (obj.position.x > player.position.x) {
+            } else if (obj.position.x > player.position.x && (obj.body.onFloor() || obj.body.touching.down)) {
               obj.body.velocity.x = -75;
             } else {
               obj.body.velocity.x = 0;
@@ -336,7 +336,11 @@
 
       function collideRope(paramPlayer, paramRope)
       {
-        collapseBricks();
+        if (collapseReady) {
+          randomSpots = fisheryates();
+          collapseBricks();
+          collapseReady = false;
+        }
       }
 
       function collideColumn(paramBrick, paramFloorOrBrick)
@@ -436,20 +440,45 @@
       var collapseBrickCount = 0;
       var collapseBrickCountMax = 10;
       var spawner3Timer;
+      var randomSpots;
+      var collapseReady = true;
       function collapseBricks() {
         if (collapseBrickCount == 0) {
-          spawner3Timer = setInterval(collapseBricks, 500);
+          clearInterval(spawnerTimer);
+          spawner3Timer = setInterval(collapseBricks, 100);
         }
         if (collapseBrickCount >= collapseBrickCountMax) {
           clearInterval(spawner3Timer);
+          spawnerTimer = setInterval(spawner, 500);
           collapseBrickCount = 0;
+          collapseReady = true;
         } else {
-          var num = Math.floor(Math.random() * SCREENWIDTHINBLOCKS);
-          makeBrick(num);
+          makeBrick(randomSpots.pop());
           collapseBrickCount += 1;
         }
       }
 
+      //  Fisher-Yates modern shuffling algorithm modified to choose a subset
+      var subsetLength = 10;
+      function fisheryates() {
+        var subset;
+
+        //  populate array
+        var arrayFull = [];
+        for (var i = 0; i < SCREENWIDTHINBLOCKS; i++) {
+          arrayFull.push(i);
+        }
+
+        //  shuffle
+        for (var i = arrayFull.length - 1; i >= arrayFull.length - subsetLength; i--) {
+          var rand = Math.floor(Math.random() * i);
+          var temp = arrayFull[i];
+          arrayFull[i] = arrayFull[rand];
+          arrayFull[rand] = temp;
+        }
+        subset = arrayFull.slice(arrayFull.length - subsetLength, arrayFull.length);
+        return subset;
+      }
 
       function render () {
         game.debug.text('Elapsed seconds: ' + this.game.time.totalElapsedSeconds(), 32, 32);
