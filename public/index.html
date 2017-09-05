@@ -77,10 +77,10 @@
 
       function create() {
           background = game.add.sprite(0, 0, 'background');
-          music = game.add.audio('music');
-          music.loop = true;
+          //music = game.add.audio('music');
+          //music.loop = true;
           jumpse = game.add.audio('jumpse');
-          music.play();
+          //music.play();
           player = game.add.sprite(100, 200, 'player');
           game.physics.arcade.enable(player);
           player.body.collideWorldBounds = true;
@@ -145,7 +145,7 @@
           game.physics.arcade.enable(brick);
           brick.smoothed = false;
           brick.body.collideWorldBounds = true;
-          brick.body.gravity.y = 1000;  //  500
+          brick.body.gravity.y = 500;  //  500
           //brick.body.velocity.x = 75;
           // brick.body.bounce.x = 0;
           // brick.body.bounce.y = 0;
@@ -422,12 +422,12 @@
         makeBrick();
       }
 
-      var spawnerTimer = setInterval(spawner, 250); //500
+      var spawnerTimer = setInterval(spawner, 500); //500
 
-      // function spawner2() {
-      //   makeMummy();
-      // }
-      // var spawner2Timer = setInterval(spawner2, 5000);
+      function spawner2() {
+        makeMummy();
+      }
+      var spawner2Timer = setInterval(spawner2, 5000);
 
       var quicksandSpeed = 2; //  5
       function quicksand() {
