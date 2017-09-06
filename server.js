@@ -1,7 +1,7 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
-var port = 168;  //  8080, 168
+var port = 8080;  //  8080, 168
 
 app.use(express.static(__dirname + '/public'));
 

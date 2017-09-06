@@ -77,10 +77,10 @@
 
       function create() {
           background = game.add.sprite(0, 0, 'background');
-          //music = game.add.audio('music');
-          //music.loop = true;
+          music = game.add.audio('music');
+          music.loop = true;
           jumpse = game.add.audio('jumpse');
-          //music.play();
+          music.play();
           player = game.add.sprite(100, 200, 'player');
           game.physics.arcade.enable(player);
           player.body.collideWorldBounds = true;
@@ -152,8 +152,8 @@
           // brick.body.weight = 0;
           // brick.body.friction.x = 0;
           // brick.body.friction.y = 0;
-          brick.body.mass = 0;
-          //brick.body.immovable = true;
+          //brick.body.mass = 0;
+          brick.body.immovable = true;
           brick.width = BLOCKSIZE;
           brick.height = BLOCKSIZE;
           brick.doneFalling = -1;
@@ -176,9 +176,18 @@
         game.physics.arcade.enable(newObj);
         newObj.smoothed = false;
         //newObj.body.collideWorldBounds = true;
-        newObj.body.gravity.y = 500;
+        newObj.body.gravity.y = 1800;
         newObj.width = BLOCKSIZE;
         newObj.height = BLOCKSIZE;
+        player.body.maxVelocity.y = 600;
+        newObj.jumpSpeed = 600;
+        newObj.jumpLock = true;
+        newObj.jumpTimer = game.time.create(false);
+        newObj.jumpTimer.loop(2000, function(){
+          newObj.jumpLock = false;
+        }, this);
+        newObj.jumpTimer.start();
+
         mummies.add(newObj);
       }
 
@@ -217,11 +226,18 @@
 
           game.physics.arcade.collide(player, platforms);
           game.physics.arcade.collide(player, bricks, collideBrickDeath, function(paramPlayer, paramBrick) {
-            return (paramBrick.doneFalling == -1 && (paramPlayer.body.overlapY >= 0 && paramPlayer.body.position.y >= paramBrick.body.position.y));
+            return (paramBrick.doneFalling == -1 && (paramPlayer.body.overlapY >= 0));
           });
-          game.physics.arcade.collide(bricks, platforms, collideColumn);
-          game.physics.arcade.collide(bricks, bricks, collideColumn);
-          game.physics.arcade.collide(mummies, brick_platforms, collideMummy);
+          game.physics.arcade.collide(bricks, platforms, collideColumn, function(paramBrick1, paramBrick2) {
+            return (paramBrick1.doneFalling == -1 && (paramBrick1.body.overlapY >= 0 && paramBrick1.body.position.y < paramBrick2.body.position.y));
+          });
+          game.physics.arcade.collide(bricks, bricks, collideColumn, function(paramBrick1, paramBrick2) {
+            return (paramBrick1.doneFalling == -1 && (paramBrick1.body.overlapY >= 0 && paramBrick1.body.position.y < paramBrick2.body.position.y));
+          });
+          game.physics.arcade.collide(mummies, brick_platforms);
+          game.physics.arcade.collide(mummies, bricks, collideMummy, function(paramMummy, paramBrick) {
+            return (paramBrick.doneFalling == -1 && (paramMummy.body.overlapY >= 0));
+          });
           game.physics.arcade.collide(mummies, platforms);
           game.physics.arcade.collide(player, rope, collideRope);
           game.physics.arcade.collide(player, brick_platforms, collideBricks);
@@ -315,12 +331,17 @@
           // }, this);
 
           mummies.forEach(function(obj) {
-            if (obj.position.x < player.position.x && (obj.body.onFloor() || obj.body.touching.down)) {
+            if (obj.position.x < player.position.x) {
               obj.body.velocity.x = 75;
-            } else if (obj.position.x > player.position.x && (obj.body.onFloor() || obj.body.touching.down)) {
+            } else if (obj.position.x > player.position.x) {
               obj.body.velocity.x = -75;
             } else {
               obj.body.velocity.x = 0;
+            }
+
+            if (!obj.jumpLock) {
+              obj.body.velocity.y = -1 * obj.jumpSpeed;
+              obj.jumpLock = true;
             }
           }, this);
       }
@@ -359,6 +380,7 @@
 
           var columnHeightPos = brick_platforms.children[blockPos].y;
           topBrick.doneFalling = columnHeightPos;
+          topBrick.body.y = columnHeightPos;
           topBrick.body.gravity = 0;
         } else {
           //paramBrick.y = paramBrick.doneFalling;
@@ -386,7 +408,13 @@
 
       function collideBrickDeath(paramPlayer, paramBrick)
       {
+        if (paramPlayer.dataJump == paramPlayer.dataJumpMax) {
           console.log("Player has died!");
+        } else {
+          if (player.body.velocity.y < 0) {
+            player.body.velocity.y = 0;
+          }
+        }
 
         // //  Collision Handling
         // if (paramPlayer.position.y <= paramBrick.position.y && (player.body.onFloor() || player.body.touching.down)) {
@@ -401,10 +429,14 @@
 
       function collideMummy(paramMummy, paramBrick)
       {
-        if (paramMummy.body.overlapY >= 0 && paramMummy.body.position.y >= paramBrick.body.position.y) {
+        if (paramMummy.jumpLock) {
           mummies.remove(paramMummy);
           var amt = 100;
           score(amt);
+        } else {
+          if (paramMummy.body.velocity.y < 0) {
+            paramMummy.body.velocity.y = 0;
+          }
         }
       }
 
